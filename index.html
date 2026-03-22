@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LumaControl">
+<meta name="theme-color" content="#080810">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>LumaControl</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080810;
+  --surface: #0f0f1a;
+  --surface2: #161628;
+  --border: rgba(255,255,255,0.07);
+  --accent: #7c5cfc;
+  --accent2: #fc5c7d;
+  --text: #f0f0ff;
+  --muted: rgba(240,240,255,0.4);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: 'Syne', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  overflow-x: hidden;
+  padding-bottom: calc(var(--safe-bottom) + 90px);
+  user-select: none;
+  -webkit-user-select: none;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(124,92,252,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(252,92,125,0.1) 0%, transparent 60%);
+  pointer-events: none; z-index: 0;
+}
+
+/* HEADER */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  padding: calc(var(--safe-top) + 16px) 24px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(8,8,16,0.85);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+.logo {
+  font-size: 22px; font-weight: 800; letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.ble-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px; border-radius: 20px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--muted); font-family: 'DM Mono', monospace; font-size: 12px;
+  cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.ble-btn.connected { border-color: rgba(124,252,124,0.4); color: #7cfc7c; background: rgba(124,252,124,0.08); }
+.ble-btn .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); transition: all 0.3s; }
+.ble-btn.connected .dot { background: #7cfc7c; box-shadow: 0 0 8px #7cfc7c; animation: pulse-dot 2s infinite; }
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* CONTENT */
+.content { position: relative; z-index: 1; padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; }
+
+/* POWER */
+.power-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 22px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 20px;
+}
+.power-label { font-size: 18px; font-weight: 700; }
+.power-label span { font-size: 13px; font-weight: 400; color: var(--muted); display: block; margin-top: 2px; font-family: 'DM Mono', monospace; }
+.toggle { width: 58px; height: 32px; background: var(--surface2); border-radius: 16px; border: 1px solid var(--border); position: relative; cursor: pointer; transition: background 0.3s; }
+.toggle.on { background: var(--accent); border-color: var(--accent); }
+.toggle::after { content:''; position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:white; transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1); box-shadow:0 2px 6px rgba(0,0,0,0.3); }
+.toggle.on::after { transform:translateX(26px); }
+
+/* CARDS */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px 22px; display: flex; flex-direction: column; gap: 16px; }
+.card-title { font-size: 12px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+/* COLOR PREVIEW */
+.color-preview { width:100%; height:80px; border-radius:14px; border:1px solid var(--border); transition:background 0.2s; position:relative; overflow:hidden; }
+.color-preview::after { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,0.1) 0%,transparent 50%); }
+
+/* SLIDERS */
+.slider-row { display:flex; flex-direction:column; gap:8px; }
+.slider-header { display:flex; justify-content:space-between; align-items:center; }
+.slider-label { font-size:14px; font-weight:600; }
+.slider-value { font-family:'DM Mono',monospace; font-size:13px; color:var(--muted); min-width:40px; text-align:right; }
+input[type=range] { -webkit-appearance:none; width:100%; height:6px; border-radius:3px; outline:none; cursor:pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:24px; height:24px; border-radius:50%; background:white; border:2px solid rgba(255,255,255,0.3); box-shadow:0 2px 12px rgba(0,0,0,0.4); cursor:pointer; }
+#hue-slider { background:linear-gradient(to right,hsl(0,100%,50%),hsl(30,100%,50%),hsl(60,100%,50%),hsl(90,100%,50%),hsl(120,100%,50%),hsl(150,100%,50%),hsl(180,100%,50%),hsl(210,100%,50%),hsl(240,100%,50%),hsl(270,100%,50%),hsl(300,100%,50%),hsl(330,100%,50%),hsl(360,100%,50%)); }
+#brightness-slider { background:linear-gradient(to right,#000,#fff); }
+#speed-slider { background:linear-gradient(to right,var(--surface2),var(--accent)); }
+#r-slider { background:linear-gradient(to right,#000,#f00); }
+#g-slider { background:linear-gradient(to right,#000,#0f0); }
+#b-slider { background:linear-gradient(to right,#000,#00f); }
+
+/* TABS */
+.tabs { display:flex; gap:6px; background:var(--surface2); padding:4px; border-radius:12px; border:1px solid var(--border); }
+.tab { flex:1; padding:8px 4px; text-align:center; font-size:12px; font-weight:700; border-radius:8px; cursor:pointer; color:var(--muted); transition:all 0.2s; }
+.tab.active { background:var(--surface); color:var(--text); border:1px solid var(--border); }
+.tab-panel { display:none; flex-direction:column; gap:14px; }
+.tab-panel.active { display:flex; }
+
+/* PALETTE */
+.palette-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; }
+.swatch { aspect-ratio:1; border-radius:10px; cursor:pointer; border:2px solid transparent; transition:transform 0.15s; }
+.swatch:active { transform:scale(0.88); }
+
+/* EFFECTS */
+.effects-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.effect-btn { aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; background:var(--surface2); border:1.5px solid var(--border); border-radius:14px; cursor:pointer; transition:all 0.2s; color:var(--muted); font-size:11px; font-weight:600; text-align:center; padding:8px 4px; }
+.effect-btn .icon { font-size:22px; line-height:1; }
+.effect-btn.active { border-color:var(--accent); color:var(--text); background:rgba(124,92,252,0.15); box-shadow:0 0 20px rgba(124,92,252,0.2); }
+
+/* PRESETS */
+.preset-list { display:flex; flex-direction:column; gap:10px; }
+.preset-item { display:flex; align-items:center; gap:14px; padding:14px 16px; background:var(--surface2); border-radius:14px; border:1px solid var(--border); cursor:pointer; transition:transform 0.15s; }
+.preset-item:active { transform:scale(0.98); }
+.preset-dot { width:36px; height:36px; border-radius:10px; flex-shrink:0; }
+.preset-info { flex:1; }
+.preset-name { font-size:15px; font-weight:600; }
+.preset-desc { font-size:12px; color:var(--muted); margin-top:2px; }
+.preset-arrow { color:var(--muted); font-size:20px; }
+
+/* SETTINGS */
+.cfg-row { display:flex; flex-direction:column; gap:4px; padding:4px 0; }
+.cfg-label { font-size:14px; font-weight:700; }
+.cfg-desc { font-size:12px; color:var(--muted); }
+.cfg-input-row { display:flex; align-items:center; gap:8px; margin-top:8px; }
+.num-input { width:70px; padding:8px; background:var(--surface2); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:'DM Mono',monospace; font-size:16px; font-weight:600; text-align:center; outline:none; }
+.num-input:focus { border-color:var(--accent); }
+.num-btn { width:36px; height:36px; border-radius:10px; border:1px solid var(--border); background:var(--surface2); color:var(--text); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.15s; flex-shrink:0; }
+.num-btn:active { background:var(--accent); border-color:var(--accent); }
+.quick-btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+.quick-btn { padding:7px 14px; background:var(--surface2); border:1px solid var(--border); border-radius:20px; color:var(--muted); font-family:'DM Mono',monospace; font-size:13px; cursor:pointer; transition:all 0.15s; }
+.quick-btn:active, .quick-btn.sel { background:var(--accent); border-color:var(--accent); color:white; }
+.cfg-select { margin-top:8px; width:100%; padding:10px 14px; background:var(--surface2); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:'Syne',sans-serif; font-size:14px; outline:none; cursor:pointer; -webkit-appearance:none; }
+.cfg-select:focus { border-color:var(--accent); }
+.cfg-calc-box { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:12px 16px; display:flex; flex-direction:column; gap:8px; }
+.calc-row { display:flex; justify-content:space-between; font-size:13px; }
+.calc-row span:first-child { color:var(--muted); }
+.calc-row span:last-child { font-family:'DM Mono',monospace; font-weight:600; }
+.apply-btn { width:100%; padding:15px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; border-radius:14px; color:white; font-family:'Syne',sans-serif; font-size:15px; font-weight:700; cursor:pointer; transition:transform 0.15s; box-shadow:0 4px 20px rgba(124,92,252,0.3); }
+.apply-btn:active { transform:scale(0.98); }
+.saved-hint { display:none; text-align:center; font-size:13px; color:#7cfc7c; padding:8px; background:rgba(124,252,124,0.08); border:1px solid rgba(124,252,124,0.2); border-radius:10px; }
+.saved-hint.visible { display:block; }
+.info-list { display:flex; flex-direction:column; }
+.info-row { display:flex; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--border); }
+.info-row:last-child { border-bottom:none; }
+.info-key { font-size:13px; color:var(--muted); }
+.info-val { font-family:'DM Mono',monospace; font-size:13px; font-weight:500; }
+
+/* EFFECT TABS */
+.effect-tab-panel { display:none; flex-direction:column; gap:16px; }
+.effect-tab-panel.active { display:flex; }
+
+/* DANGER BUTTONS */
+.danger-row { display:flex; gap:10px; }
+.danger-btn { flex:1; padding:14px 8px; border:none; border-radius:14px; font-family:'Syne',sans-serif; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.15s; display:flex; flex-direction:column; align-items:center; gap:4px; }
+.danger-btn:active { transform:scale(0.96); }
+.btn-restart { background:rgba(255,160,0,0.15); border:1px solid rgba(255,160,0,0.4); color:#ffa000; }
+.btn-restart:active { background:rgba(255,160,0,0.3); }
+.btn-shutdown { background:rgba(255,50,50,0.15); border:1px solid rgba(255,50,50,0.4); color:#ff3232; }
+.btn-shutdown:active { background:rgba(255,50,50,0.3); }
+.danger-icon { font-size:22px; }
+.install-banner { display:none; align-items:center; gap:12px; padding:14px 18px; background:linear-gradient(135deg,rgba(124,92,252,0.2),rgba(252,92,125,0.15)); border:1px solid rgba(124,92,252,0.3); border-radius:16px; cursor:pointer; }
+.install-banner.visible { display:flex; }
+.install-icon { font-size:28px; }
+.install-text { flex:1; }
+.install-title { font-size:14px; font-weight:700; }
+.install-sub { font-size:12px; color:var(--muted); margin-top:2px; }
+.install-close { color:var(--muted); font-size:20px; padding:4px; }
+
+/* PAGES */
+.page { display:none; }
+.page.active { display:flex; flex-direction:column; gap:16px; }
+
+/* NAV */
+.bottom-nav { position:fixed; bottom:0; left:0; right:0; z-index:100; display:flex; padding:10px 8px calc(var(--safe-bottom) + 10px); background:rgba(8,8,16,0.92); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-top:1px solid var(--border); }
+.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:6px 0; color:var(--muted); font-size:10px; font-weight:600; letter-spacing:0.3px; transition:color 0.2s; }
+.nav-item .nav-icon { font-size:20px; }
+.nav-item.active { color:var(--text); }
+.nav-item.active .nav-icon { filter:drop-shadow(0 0 8px var(--accent)); }
+
+/* OVERLAY */
+.overlay { position:fixed; inset:0; z-index:50; display:none; flex-direction:column; align-items:center; justify-content:center; gap:16px; background:rgba(8,8,16,0.9); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); padding:32px; }
+.overlay.visible { display:flex; }
+.overlay-icon { font-size:64px; animation:float 3s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+.overlay-title { font-size:28px; font-weight:800; }
+.overlay-sub { font-size:14px; color:var(--muted); text-align:center; line-height:1.6; max-width:260px; }
+.connect-btn { padding:16px 40px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; border-radius:50px; color:white; font-family:'Syne',sans-serif; font-size:16px; font-weight:700; cursor:pointer; box-shadow:0 8px 30px rgba(124,92,252,0.4); transition:transform 0.2s; margin-top:8px; }
+.connect-btn:active { transform:scale(0.96); }
+.overlay-hint { font-size:12px; color:var(--muted); text-align:center; line-height:1.6; }
+
+/* TOAST */
+.toast { position:fixed; bottom:calc(var(--safe-bottom) + 100px); left:50%; transform:translateX(-50%) translateY(20px); background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:10px 22px; border-radius:20px; font-size:13px; font-family:'DM Mono',monospace; opacity:0; transition:all 0.3s; z-index:200; white-space:nowrap; pointer-events:none; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="logo">LumaControl</div>
+  <button class="ble-btn" id="bleBtn" onclick="toggleBLE()">
+    <div class="dot"></div>
+    <span id="bleBtnText">Verbinden</span>
+  </button>
+</div>
+
+<!-- Overlay -->
+<div class="overlay" id="overlay">
+  <div class="overlay-icon">💡</div>
+  <div class="overlay-title">LumaControl</div>
+  <div class="overlay-sub">Verbinde dich mit deinem ESP32 LED Controller über Bluetooth</div>
+  <button class="connect-btn" onclick="toggleBLE()">Jetzt verbinden</button>
+  <div class="overlay-hint">Benötigt <strong>Bluefy Browser</strong> (App Store)<br>oder Chrome/Edge auf Android</div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- Install Banner -->
+  <div class="install-banner" id="installBanner">
+    <div class="install-icon">📲</div>
+    <div class="install-text">
+      <div class="install-title">Als App installieren</div>
+      <div class="install-sub">Teilen → „Zum Home-Bildschirm"</div>
+    </div>
+    <div class="install-close" onclick="dismissInstall()">✕</div>
+  </div>
+
+  <!-- PAGE: Steuern -->
+  <div class="page active" id="page-control">
+
+    <div class="power-row">
+      <div class="power-label">LEDs<span id="powerStatus">Eingeschaltet</span></div>
+      <div class="toggle on" id="powerToggle" onclick="togglePower()"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Helligkeit</div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">☀️ Intensität</span>
+          <span class="slider-value" id="briVal">50%</span>
+        </div>
+        <input type="range" id="brightness-slider" min="0" max="255" value="128"
+          oninput="updateBrightness(this.value)" onchange="sendBrightness(this.value)">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Farbe</div>
+      <div class="color-preview" id="colorPreview"></div>
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('hsv')">HSV</div>
+        <div class="tab" onclick="switchTab('rgb')">RGB</div>
+        <div class="tab" onclick="switchTab('palette')">Palette</div>
+      </div>
+      <div class="tab-panel active" id="tab-hsv">
+        <div class="slider-row">
+          <div class="slider-header"><span class="slider-label">🌈 Farbton</span><span class="slider-value" id="hueVal">0°</span></div>
+          <input type="range" id="hue-slider" min="0" max="255" value="0" oninput="updateHSV()" onchange="sendColor()">
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span class="slider-label">🎨 Sättigung</span><span class="slider-value" id="satVal">100%</span></div>
+          <input type="range" id="sat-slider" min="0" max="255" value="255" oninput="updateHSV()" onchange="sendColor()">
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-rgb">
+        <div class="slider-row">
+          <div class="slider-header"><span class="slider-label">🔴 Rot</span><span class="slider-value" id="rVal">255</span></div>
+          <input type="range" id="r-slider" min="0" max="255" value="255" oninput="updateRGB()" onchange="sendColorRGB()">
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span class="slider-label">🟢 Grün</span><span class="slider-value" id="gVal">0</span></div>
+          <input type="range" id="g-slider" min="0" max="255" value="0" oninput="updateRGB()" onchange="sendColorRGB()">
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span class="slider-label">🔵 Blau</span><span class="slider-value" id="bVal">0</span></div>
+          <input type="range" id="b-slider" min="0" max="255" value="0" oninput="updateRGB()" onchange="sendColorRGB()">
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-palette">
+        <div class="palette-grid">
+          <div class="swatch" style="background:#ff4444" onclick="setPalette(255,68,68)"></div>
+          <div class="swatch" style="background:#ff8800" onclick="setPalette(255,136,0)"></div>
+          <div class="swatch" style="background:#ffdd00" onclick="setPalette(255,221,0)"></div>
+          <div class="swatch" style="background:#44ff44" onclick="setPalette(68,255,68)"></div>
+          <div class="swatch" style="background:#0088ff" onclick="setPalette(0,136,255)"></div>
+          <div class="swatch" style="background:#aa44ff" onclick="setPalette(170,68,255)"></div>
+          <div class="swatch" style="background:#ff44aa" onclick="setPalette(255,68,170)"></div>
+          <div class="swatch" style="background:#00ffcc" onclick="setPalette(0,255,204)"></div>
+          <div class="swatch" style="background:#ffffff" onclick="setPalette(255,255,255)"></div>
+          <div class="swatch" style="background:#ffaacc" onclick="setPalette(255,170,204)"></div>
+          <div class="swatch" style="background:#aaffee" onclick="setPalette(170,255,238)"></div>
+          <div class="swatch" style="background:#ff6622" onclick="setPalette(255,102,34)"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PAGE: Effekte -->
+  <div class="page" id="page-effects">
+
+    <!-- Kategorie Tabs -->
+    <div class="tabs">
+      <div class="tab active" onclick="switchEffectTab('wow')">🌟 WOW (100)</div>
+      <div class="tab" onclick="switchEffectTab('auto')">🚗 Auto (50)</div>
+    </div>
+
+    <!-- WOW Effekte -->
+    <div class="effect-tab-panel active" id="etab-wow">
+      <div class="card" style="gap:10px">
+        <div class="card-title">WOW Effekte</div>
+        <div class="effects-grid" id="effectsGridWow">
+          <div class="effect-btn active" data-id="0"  onclick="selectEffect(0)"><div class="icon">⬛</div>Solid</div>
+          <div class="effect-btn" data-id="1"  onclick="selectEffect(1)"><div class="icon">🌈</div>Rainbow</div>
+          <div class="effect-btn" data-id="2"  onclick="selectEffect(2)"><div class="icon">💫</div>Breathe</div>
+          <div class="effect-btn" data-id="3"  onclick="selectEffect(3)"><div class="icon">☄️</div>Meteor</div>
+          <div class="effect-btn" data-id="4"  onclick="selectEffect(4)"><div class="icon">🔥</div>Fire</div>
+          <div class="effect-btn" data-id="5"  onclick="selectEffect(5)"><div class="icon">✨</div>Twinkle</div>
+          <div class="effect-btn" data-id="6"  onclick="selectEffect(6)"><div class="icon">🌊</div>Wave</div>
+          <div class="effect-btn" data-id="7"  onclick="selectEffect(7)"><div class="icon">🎊</div>Konfetti</div>
+          <div class="effect-btn" data-id="8"  onclick="selectEffect(8)"><div class="icon">🚗</div>Larson</div>
+          <div class="effect-btn" data-id="9"  onclick="selectEffect(9)"><div class="icon">🔮</div>Plasma</div>
+          <div class="effect-btn" data-id="10" onclick="selectEffect(10)"><div class="icon">👁️</div>Cylon</div>
+          <div class="effect-btn" data-id="11" onclick="selectEffect(11)"><div class="icon">🤹</div>Juggle</div>
+          <div class="effect-btn" data-id="12" onclick="selectEffect(12)"><div class="icon">🥁</div>BPM</div>
+          <div class="effect-btn" data-id="13" onclick="selectEffect(13)"><div class="icon">📡</div>Noise</div>
+          <div class="effect-btn" data-id="14" onclick="selectEffect(14)"><div class="icon">🌌</div>Aurora</div>
+          <div class="effect-btn" data-id="15" onclick="selectEffect(15)"><div class="icon">💚</div>Matrix</div>
+          <div class="effect-btn" data-id="16" onclick="selectEffect(16)"><div class="icon">🎆</div>Fireworks</div>
+          <div class="effect-btn" data-id="17" onclick="selectEffect(17)"><div class="icon">🌩️</div>Lightning</div>
+          <div class="effect-btn" data-id="18" onclick="selectEffect(18)"><div class="icon">❤️</div>Heartbeat</div>
+          <div class="effect-btn" data-id="19" onclick="selectEffect(19)"><div class="icon">💧</div>Ripple</div>
+          <div class="effect-btn" data-id="20" onclick="selectEffect(20)"><div class="icon">↔️</div>DualMeteor</div>
+          <div class="effect-btn" data-id="21" onclick="selectEffect(21)"><div class="icon">💥</div>Explosion</div>
+          <div class="effect-btn" data-id="22" onclick="selectEffect(22)"><div class="icon">〰️</div>Sinelon</div>
+          <div class="effect-btn" data-id="23" onclick="selectEffect(23)"><div class="icon">🌈</div>RainbowMeteor</div>
+          <div class="effect-btn" data-id="24" onclick="selectEffect(24)"><div class="icon">🌀</div>Warp</div>
+          <div class="effect-btn" data-id="25" onclick="selectEffect(25)"><div class="icon">⭐</div>Starfield</div>
+          <div class="effect-btn" data-id="26" onclick="selectEffect(26)"><div class="icon">💡</div>NeonPulse</div>
+          <div class="effect-btn" data-id="27" onclick="selectEffect(27)"><div class="icon">🌀</div>GalaxySwirl</div>
+          <div class="effect-btn" data-id="28" onclick="selectEffect(28)"><div class="icon">🌋</div>Lava</div>
+          <div class="effect-btn" data-id="29" onclick="selectEffect(29)"><div class="icon">🧊</div>IceCave</div>
+          <div class="effect-btn" data-id="30" onclick="selectEffect(30)"><div class="icon">🌀</div>Vortex</div>
+          <div class="effect-btn" data-id="31" onclick="selectEffect(31)"><div class="icon">✦</div>SparkleTrail</div>
+          <div class="effect-btn" data-id="32" onclick="selectEffect(32)"><div class="icon">⛈️</div>Thunderstorm</div>
+          <div class="effect-btn" data-id="33" onclick="selectEffect(33)"><div class="icon">🧬</div>DNA</div>
+          <div class="effect-btn" data-id="34" onclick="selectEffect(34)"><div class="icon">🏖️</div>Pacifica</div>
+          <div class="effect-btn" data-id="35" onclick="selectEffect(35)"><div class="icon">🌅</div>Sunrise</div>
+          <div class="effect-btn" data-id="36" onclick="selectEffect(36)"><div class="icon">🌧️</div>Waterfall</div>
+          <div class="effect-btn" data-id="37" onclick="selectEffect(37)"><div class="icon">🚔</div>Police</div>
+          <div class="effect-btn" data-id="38" onclick="selectEffect(38)"><div class="icon">⚡</div>Strobe</div>
+          <div class="effect-btn" data-id="39" onclick="selectEffect(39)"><div class="icon">💎</div>Glitter</div>
+          <div class="effect-btn" data-id="40" onclick="selectEffect(40)"><div class="icon">🕺</div>Disco</div>
+          <div class="effect-btn" data-id="41" onclick="selectEffect(41)"><div class="icon">🔆</div>NeonSign</div>
+          <div class="effect-btn" data-id="42" onclick="selectEffect(42)"><div class="icon">🌊</div>MagmaFlow</div>
+          <div class="effect-btn" data-id="43" onclick="selectEffect(43)"><div class="icon">🌿</div>NorthernLights</div>
+          <div class="effect-btn" data-id="44" onclick="selectEffect(44)"><div class="icon">🔺</div>Prism</div>
+          <div class="effect-btn" data-id="45" onclick="selectEffect(45)"><div class="icon">🕳️</div>BlackHole</div>
+          <div class="effect-btn" data-id="46" onclick="selectEffect(46)"><div class="icon">🔷</div>CrystalPulse</div>
+          <div class="effect-btn" data-id="47" onclick="selectEffect(47)"><div class="icon">💫</div>Supernova</div>
+          <div class="effect-btn" data-id="48" onclick="selectEffect(48)"><div class="icon">⚛️</div>QuantumFlux</div>
+          <div class="effect-btn" data-id="49" onclick="selectEffect(49)"><div class="icon">🌫️</div>Nebula</div>
+          <div class="effect-btn" data-id="50" onclick="selectEffect(50)"><div class="icon">☄️</div>CometShower</div>
+          <div class="effect-btn" data-id="51" onclick="selectEffect(51)"><div class="icon">🌪️</div>VortexWarp</div>
+          <div class="effect-btn" data-id="52" onclick="selectEffect(52)"><div class="icon">📻</div>Pulsar</div>
+          <div class="effect-btn" data-id="53" onclick="selectEffect(53)"><div class="icon">☀️</div>SolarFlare</div>
+          <div class="effect-btn" data-id="54" onclick="selectEffect(54)"><div class="icon">🚀</div>Hyperspace</div>
+          <div class="effect-btn" data-id="55" onclick="selectEffect(55)"><div class="icon">⚡</div>EnergyBall</div>
+          <div class="effect-btn" data-id="56" onclick="selectEffect(56)"><div class="icon">🌊</div>WaveCrash</div>
+          <div class="effect-btn" data-id="57" onclick="selectEffect(57)"><div class="icon">🔥</div>Fireplace</div>
+          <div class="effect-btn" data-id="58" onclick="selectEffect(58)"><div class="icon">🌀</div>ColorTornado</div>
+          <div class="effect-btn" data-id="59" onclick="selectEffect(59)"><div class="icon">🍭</div>CandyPop</div>
+          <div class="effect-btn" data-id="60" onclick="selectEffect(60)"><div class="icon">📺</div>GlitchArt</div>
+          <div class="effect-btn" data-id="61" onclick="selectEffect(61)"><div class="icon">💨</div>Comet2</div>
+          <div class="effect-btn" data-id="62" onclick="selectEffect(62)"><div class="icon">⚡</div>RetroZap</div>
+          <div class="effect-btn" data-id="63" onclick="selectEffect(63)"><div class="icon">🔲</div>CyberGrid</div>
+          <div class="effect-btn" data-id="64" onclick="selectEffect(64)"><div class="icon">📊</div>Spectrum</div>
+          <div class="effect-btn" data-id="65" onclick="selectEffect(65)"><div class="icon">🌊</div>OceanDepth</div>
+          <div class="effect-btn" data-id="66" onclick="selectEffect(66)"><div class="icon">🫧</div>BubbleUp</div>
+          <div class="effect-btn" data-id="67" onclick="selectEffect(67)"><div class="icon">🔴</div>LaserShow</div>
+          <div class="effect-btn" data-id="68" onclick="selectEffect(68)"><div class="icon">💠</div>CrystalGrowth</div>
+          <div class="effect-btn" data-id="69" onclick="selectEffect(69)"><div class="icon">⚡</div>TeslaCoil</div>
+          <div class="effect-btn" data-id="70" onclick="selectEffect(70)"><div class="icon">🎵</div>SoundWave</div>
+          <div class="effect-btn" data-id="71" onclick="selectEffect(71)"><div class="icon">🏳️‍🌈</div>Pride</div>
+          <div class="effect-btn" data-id="72" onclick="selectEffect(72)"><div class="icon">🎞️</div>Parallax</div>
+          <div class="effect-btn" data-id="73" onclick="selectEffect(73)"><div class="icon">💣</div>Explosion2</div>
+          <div class="effect-btn" data-id="74" onclick="selectEffect(74)"><div class="icon">💾</div>DataStream</div>
+          <div class="effect-btn" data-id="75" onclick="selectEffect(75)"><div class="icon">🌧️</div>NeonRain</div>
+          <div class="effect-btn" data-id="76" onclick="selectEffect(76)"><div class="icon">🌫️</div>HoloFog</div>
+          <div class="effect-btn" data-id="77" onclick="selectEffect(77)"><div class="icon">🏎️</div>PixelRace</div>
+          <div class="effect-btn" data-id="78" onclick="selectEffect(78)"><div class="icon">🌋</div>Earthquake</div>
+          <div class="effect-btn" data-id="79" onclick="selectEffect(79)"><div class="icon">🌌</div>CosmicDust</div>
+          <div class="effect-btn" data-id="80" onclick="selectEffect(80)"><div class="icon">🕳️</div>TimeTunnel</div>
+          <div class="effect-btn" data-id="81" onclick="selectEffect(81)"><div class="icon">🪞</div>MirrorWave</div>
+          <div class="effect-btn" data-id="82" onclick="selectEffect(82)"><div class="icon">💍</div>DiamondSpark</div>
+          <div class="effect-btn" data-id="83" onclick="selectEffect(83)"><div class="icon">☢️</div>Radioactive</div>
+          <div class="effect-btn" data-id="84" onclick="selectEffect(84)"><div class="icon">🌈</div>AcidTrip</div>
+          <div class="effect-btn" data-id="85" onclick="selectEffect(85)"><div class="icon">💥</div>StarBurst</div>
+          <div class="effect-btn" data-id="86" onclick="selectEffect(86)"><div class="icon">🌑</div>EclipseRing</div>
+          <div class="effect-btn" data-id="87" onclick="selectEffect(87)"><div class="icon">🌀</div>SpiralGalaxy</div>
+          <div class="effect-btn" data-id="88" onclick="selectEffect(88)"><div class="icon">☢️</div>NuclearCore</div>
+          <div class="effect-btn" data-id="89" onclick="selectEffect(89)"><div class="icon">🧠</div>MindBender</div>
+          <div class="effect-btn" data-id="90" onclick="selectEffect(90)"><div class="icon">💻</div>DigitalRain</div>
+          <div class="effect-btn" data-id="91" onclick="selectEffect(91)"><div class="icon">🌀</div>ChaosField</div>
+          <div class="effect-btn" data-id="92" onclick="selectEffect(92)"><div class="icon">🛸</div>SpaceDrift</div>
+          <div class="effect-btn" data-id="93" onclick="selectEffect(93)"><div class="icon">🌑</div>VoidPulse</div>
+          <div class="effect-btn" data-id="94" onclick="selectEffect(94)"><div class="icon">🚀</div>PhotonTorpedo</div>
+          <div class="effect-btn" data-id="95" onclick="selectEffect(95)"><div class="icon">💥</div>ShockWave</div>
+          <div class="effect-btn" data-id="96" onclick="selectEffect(96)"><div class="icon">🎨</div>ChromaticAberration</div>
+          <div class="effect-btn" data-id="97" onclick="selectEffect(97)"><div class="icon">🕳️</div>WormHole</div>
+          <div class="effect-btn" data-id="98" onclick="selectEffect(98)"><div class="icon">☢️</div>XRayPulse</div>
+          <div class="effect-btn" data-id="99" onclick="selectEffect(99)"><div class="icon">🌀</div>UltimateChaos</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auto Effekte -->
+    <div class="effect-tab-panel" id="etab-auto">
+      <div class="card" style="gap:10px">
+        <div class="card-title">🚗 Auto Effekte</div>
+        <div class="effects-grid">
+          <div class="effect-btn" data-id="100" onclick="selectEffect(100)"><div class="icon">⬜</div>SteadyWhite</div>
+          <div class="effect-btn" data-id="101" onclick="selectEffect(101)"><div class="icon">💡</div>DrivingPulse</div>
+          <div class="effect-btn" data-id="102" onclick="selectEffect(102)"><div class="icon">➡️</div>SpeedLines</div>
+          <div class="effect-btn" data-id="103" onclick="selectEffect(103)"><div class="icon">🔴</div>RPMBeat</div>
+          <div class="effect-btn" data-id="104" onclick="selectEffect(104)"><div class="icon">📊</div>TachoPulse</div>
+          <div class="effect-btn" data-id="105" onclick="selectEffect(105)"><div class="icon">🌃</div>NightDrive</div>
+          <div class="effect-btn" data-id="106" onclick="selectEffect(106)"><div class="icon">🛣️</div>HighwayStripes</div>
+          <div class="effect-btn" data-id="107" onclick="selectEffect(107)"><div class="icon">🔴</div>TailLight</div>
+          <div class="effect-btn" data-id="108" onclick="selectEffect(108)"><div class="icon">🟡</div>TurnSignal</div>
+          <div class="effect-btn" data-id="109" onclick="selectEffect(109)"><div class="icon">🛑</div>BrakeLight</div>
+          <div class="effect-btn" data-id="110" onclick="selectEffect(110)"><div class="icon">🚗</div>NightRider</div>
+          <div class="effect-btn" data-id="111" onclick="selectEffect(111)"><div class="icon">✨</div>UnderbodyGlow</div>
+          <div class="effect-btn" data-id="112" onclick="selectEffect(112)"><div class="icon">🌟</div>NeonUndercar</div>
+          <div class="effect-btn" data-id="113" onclick="selectEffect(113)"><div class="icon">⚡</div>SpeedoGlow</div>
+          <div class="effect-btn" data-id="114" onclick="selectEffect(114)"><div class="icon">💨</div>DriftSmoke</div>
+          <div class="effect-btn" data-id="115" onclick="selectEffect(115)"><div class="icon">💧</div>NitroBoost</div>
+          <div class="effect-btn" data-id="116" onclick="selectEffect(116)"><div class="icon">🔥</div>ExhaustFlame</div>
+          <div class="effect-btn" data-id="117" onclick="selectEffect(117)"><div class="icon">🚀</div>Warp9</div>
+          <div class="effect-btn" data-id="118" onclick="selectEffect(118)"><div class="icon">🔲</div>LaserGrid</div>
+          <div class="effect-btn" data-id="119" onclick="selectEffect(119)"><div class="icon">🏁</div>CarbonFiber</div>
+          <div class="effect-btn" data-id="120" onclick="selectEffect(120)"><div class="icon">🏎️</div>GTRaceMode</div>
+          <div class="effect-btn" data-id="121" onclick="selectEffect(121)"><div class="icon">🌀</div>DriftKing</div>
+          <div class="effect-btn" data-id="122" onclick="selectEffect(122)"><div class="icon">🚔</div>NightPatrol</div>
+          <div class="effect-btn" data-id="123" onclick="selectEffect(123)"><div class="icon">🌙</div>Backlight</div>
+          <div class="effect-btn" data-id="124" onclick="selectEffect(124)"><div class="icon">💨</div>StreetRacer</div>
+          <div class="effect-btn" data-id="125" onclick="selectEffect(125)"><div class="icon">🌀</div>TurboGlow</div>
+          <div class="effect-btn" data-id="126" onclick="selectEffect(126)"><div class="icon">💨</div>BurnoutSmoke</div>
+          <div class="effect-btn" data-id="127" onclick="selectEffect(127)"><div class="icon">🏁</div>DragRace</div>
+          <div class="effect-btn" data-id="128" onclick="selectEffect(128)"><div class="icon">🌆</div>CityLights</div>
+          <div class="effect-btn" data-id="129" onclick="selectEffect(129)"><div class="icon">🛣️</div>MotorwayLamp</div>
+          <div class="effect-btn" data-id="130" onclick="selectEffect(130)"><div class="icon">🔴</div>RearFog</div>
+          <div class="effect-btn" data-id="131" onclick="selectEffect(131)"><div class="icon">🏎️</div>RacingStripes</div>
+          <div class="effect-btn" data-id="132" onclick="selectEffect(132)"><div class="icon">📊</div>Speedometer</div>
+          <div class="effect-btn" data-id="133" onclick="selectEffect(133)"><div class="icon">🟡</div>CargoHold</div>
+          <div class="effect-btn" data-id="134" onclick="selectEffect(134)"><div class="icon">🟠</div>SafetyOrange</div>
+          <div class="effect-btn" data-id="135" onclick="selectEffect(135)"><div class="icon">🔵</div>ICE Blue</div>
+          <div class="effect-btn" data-id="136" onclick="selectEffect(136)"><div class="icon">⭕</div>HaloRing</div>
+          <div class="effect-btn" data-id="137" onclick="selectEffect(137)"><div class="icon">🔴</div>AngryRed</div>
+          <div class="effect-btn" data-id="138" onclick="selectEffect(138)"><div class="icon">🔵</div>CoolBlue</div>
+          <div class="effect-btn" data-id="139" onclick="selectEffect(139)"><div class="icon">🟣</div>PurpleNight</div>
+          <div class="effect-btn" data-id="140" onclick="selectEffect(140)"><div class="icon">🟡</div>GoldFlash</div>
+          <div class="effect-btn" data-id="141" onclick="selectEffect(141)"><div class="icon">⚙️</div>SteelGray</div>
+          <div class="effect-btn" data-id="142" onclick="selectEffect(142)"><div class="icon">🚨</div>EmergencyFlash</div>
+          <div class="effect-btn" data-id="143" onclick="selectEffect(143)"><div class="icon">☀️</div>DaytimeRunning</div>
+          <div class="effect-btn" data-id="144" onclick="selectEffect(144)"><div class="icon">🛣️</div>CruiseControl</div>
+          <div class="effect-btn" data-id="145" onclick="selectEffect(145)"><div class="icon">🌡️</div>OverheatWarning</div>
+          <div class="effect-btn" data-id="146" onclick="selectEffect(146)"><div class="icon">💥</div>FullThrottle</div>
+          <div class="effect-btn" data-id="147" onclick="selectEffect(147)"><div class="icon">😴</div>SilentCruise</div>
+          <div class="effect-btn" data-id="148" onclick="selectEffect(148)"><div class="icon">🏎️</div>SportMode</div>
+          <div class="effect-btn" data-id="149" onclick="selectEffect(149)"><div class="icon">🌐</div>GrandTourer</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Speed -->
+    <div class="card">
+      <div class="card-title">Geschwindigkeit</div>
+      <div class="slider-row">
+        <div class="slider-header"><span class="slider-label">⚡ Speed</span><span class="slider-value" id="speedVal">50%</span></div>
+        <input type="range" id="speed-slider" min="1" max="255" value="128" oninput="updateSpeed(this.value)" onchange="sendEffect()">
+      </div>
+    </div>
+
+    <!-- Restart / Shutdown -->
+    <div class="card">
+      <div class="card-title">⚙️ Gerät</div>
+      <div class="danger-row">
+        <button class="danger-btn btn-restart" onclick="restartESP()">
+          <span class="danger-icon">🔄</span>Neustart
+        </button>
+        <button class="danger-btn btn-shutdown" onclick="shutdownESP()">
+          <span class="danger-icon">💤</span>Ausschalten
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PAGE: Presets -->
+  <div class="page" id="page-presets">
+    <div class="card">
+      <div class="card-title">Schnell-Presets</div>
+      <div class="preset-list">
+        <div class="preset-item" onclick="applyPreset('sunset')">
+          <div class="preset-dot" style="background:linear-gradient(135deg,#ff6b35,#f7c948)"></div>
+          <div class="preset-info"><div class="preset-name">Sunset Lounge</div><div class="preset-desc">Warme Orange-Töne, Pulse</div></div>
+          <div class="preset-arrow">›</div>
+        </div>
+        <div class="preset-item" onclick="applyPreset('ocean')">
+          <div class="preset-dot" style="background:linear-gradient(135deg,#0575e6,#021b79)"></div>
+          <div class="preset-info"><div class="preset-name">Deep Ocean</div><div class="preset-desc">Blaue Wellen, Wave-Effekt</div></div>
+          <div class="preset-arrow">›</div>
+        </div>
+        <div class="preset-item" onclick="applyPreset('party')">
+          <div class="preset-dot" style="background:linear-gradient(135deg,#fc00ff,#00dbde)"></div>
+          <div class="preset-info"><div class="preset-name">Party Mode</div><div class="preset-desc">Schneller Rainbow, max Speed</div></div>
+          <div class="preset-arrow">›</div>
+        </div>
+        <div class="preset-item" onclick="applyPreset('forest')">
+          <div class="preset-dot" style="background:linear-gradient(135deg,#11998e,#38ef7d)"></div>
+          <div class="preset-info"><div class="preset-name">Forest Night</div><div class="preset-desc">Grünes Twinkle, gedimmt</div></div>
+          <div class="preset-arrow">›</div>
+        </div>
+        <div class="preset-item" onclick="applyPreset('fire')">
+          <div class="preset-dot" style="background:linear-gradient(135deg,#f12711,#f5af19)"></div>
+          <div class="preset-info"><div class="preset-name">Kaminfeuer</div><div class="preset-desc">Fire-Effekt, warm</div></div>
+          <div class="preset-arrow">›</div>
+        </div>
+        <div class="preset-item" onclick="applyPreset('white')">
+          <div class="preset-dot" style="background:#fff;border:1px solid var(--border)"></div>
+          <div class="preset-info"><div class="preset-name">Tageslicht</div><div class="preset-desc">Reines Weiß, volle Helligkeit</div></div>
+          <div class="preset-arrow">›</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: Setup -->
+  <div class="page" id="page-settings">
+
+    <!-- LED Streifen Konfiguration -->
+    <div class="card">
+      <div class="card-title">🔧 LED Streifen Konfiguration</div>
+
+      <!-- LED Anzahl mit direktem Input -->
+      <div class="cfg-row">
+        <div class="cfg-label">LED Anzahl</div>
+        <div class="cfg-desc">Wie viele LEDs sind angeschlossen?</div>
+        <div class="cfg-input-row">
+          <button class="num-btn" onclick="changeNum('ledCount',-10)">−−</button>
+          <button class="num-btn" onclick="changeNum('ledCount',-1)">−</button>
+          <input type="number" class="num-input" id="ledCountInput" value="60" min="1" max="500"
+            onchange="cfg.ledCount=Math.max(1,Math.min(500,+this.value));syncCfgUI()">
+          <button class="num-btn" onclick="changeNum('ledCount',1)">+</button>
+          <button class="num-btn" onclick="changeNum('ledCount',10)">++</button>
+        </div>
+      </div>
+
+      <!-- Schnellauswahl -->
+      <div class="cfg-label" style="margin-top:4px">Schnellauswahl</div>
+      <div class="quick-btns">
+        <button class="quick-btn" onclick="setLedCount(30)">30</button>
+        <button class="quick-btn" onclick="setLedCount(60)">60</button>
+        <button class="quick-btn" onclick="setLedCount(90)">90</button>
+        <button class="quick-btn" onclick="setLedCount(120)">120</button>
+        <button class="quick-btn" onclick="setLedCount(144)">144</button>
+        <button class="quick-btn" onclick="setLedCount(300)">300</button>
+      </div>
+
+      <div style="height:1px;background:var(--border);margin:4px 0"></div>
+
+      <!-- Länge -->
+      <div class="cfg-row">
+        <div class="cfg-label">Länge (cm)</div>
+        <div class="cfg-desc">Physische Länge des Streifens</div>
+        <div class="cfg-input-row">
+          <button class="num-btn" onclick="changeNum('ledLength',-10)">−−</button>
+          <button class="num-btn" onclick="changeNum('ledLength',-1)">−</button>
+          <input type="number" class="num-input" id="ledLengthInput" value="100" min="1" max="2000"
+            onchange="cfg.ledLength=Math.max(1,Math.min(2000,+this.value));syncCfgUI()">
+          <button class="num-btn" onclick="changeNum('ledLength',1)">+</button>
+          <button class="num-btn" onclick="changeNum('ledLength',10)">++</button>
+        </div>
+      </div>
+
+      <!-- Berechnete Werte -->
+      <div class="cfg-calc-box" id="cfgCalcBox">
+        <div class="calc-row"><span>LEDs/Meter</span><span id="calcPerMeter">60</span></div>
+        <div class="calc-row"><span>Stromverbrauch (max)</span><span id="calcPower">—</span></div>
+        <div class="calc-row"><span>Empf. Netzteil</span><span id="calcPsu">—</span></div>
+      </div>
+
+      <div style="height:1px;background:var(--border);margin:4px 0"></div>
+
+      <!-- GPIO Pin -->
+      <div class="cfg-row">
+        <div class="cfg-label">GPIO Pin</div>
+        <div class="cfg-desc">Datenkabel angeschlossen an</div>
+        <div class="cfg-input-row" style="justify-content:flex-end">
+          <span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--muted)">GPIO</span>
+          <input type="number" class="num-input" id="gpioInput" value="48" min="0" max="48"
+            onchange="cfg.gpio=+this.value">
+        </div>
+      </div>
+
+      <!-- LED Typ -->
+      <div class="cfg-row">
+        <div class="cfg-label">LED Typ</div>
+        <div class="cfg-desc">Dein Streifentyp</div>
+        <select class="cfg-select" id="ledTypeSelect" onchange="cfg.ledType=this.value">
+          <option value="WS2812B" selected>WS2812B</option>
+          <option value="WS2811">WS2811</option>
+          <option value="WS2813">WS2813</option>
+          <option value="SK6812">SK6812 (RGBW)</option>
+          <option value="APA102">APA102</option>
+        </select>
+      </div>
+
+      <!-- Farbreihenfolge -->
+      <div class="cfg-row">
+        <div class="cfg-label">Farbreihenfolge</div>
+        <div class="cfg-desc">Meist GRB bei WS2812B</div>
+        <select class="cfg-select" id="colorOrderSelect" onchange="cfg.colorOrder=this.value">
+          <option value="GRB" selected>GRB</option>
+          <option value="RGB">RGB</option>
+          <option value="BGR">BGR</option>
+          <option value="RBG">RBG</option>
+          <option value="BRG">BRG</option>
+          <option value="GBR">GBR</option>
+        </select>
+      </div>
+
+      <!-- Max Helligkeit -->
+      <div class="cfg-row">
+        <div class="cfg-label">Max. Helligkeit</div>
+        <div class="cfg-desc">Begrenzt den Stromverbrauch</div>
+        <div class="slider-row" style="width:100%;margin-top:8px">
+          <div class="slider-header">
+            <span style="font-size:12px;color:var(--muted)">Limit</span>
+            <span class="slider-value" id="maxBriVal">100%</span>
+          </div>
+          <input type="range" id="maxBri-slider" min="1" max="255" value="255"
+            style="background:linear-gradient(to right,var(--surface2),var(--accent))"
+            oninput="cfg.maxBri=+this.value;document.getElementById('maxBriVal').textContent=Math.round(+this.value/2.55)+'%'">
+        </div>
+      </div>
+
+      <!-- Speichern Button -->
+      <button class="apply-btn" onclick="saveLEDConfig()">
+        💾 Speichern &amp; auf ESP übertragen
+      </button>
+
+      <!-- Gespeichert-Hinweis -->
+      <div class="saved-hint" id="savedHint">✅ Gespeichert! ESP startet neu und wendet die Einstellungen an (~3 Sek.).</div>
+    </div>
+
+    <!-- Info vom ESP -->
+    <div class="card">
+      <div class="card-title">📡 ESP32 Info</div>
+      <div class="info-list">
+        <div class="info-row"><span class="info-key">Gerät</span><span class="info-val" id="infoDevice">—</span></div>
+        <div class="info-row"><span class="info-key">Status</span><span class="info-val" id="infoStatus">🔴 Getrennt</span></div>
+        <div class="info-row"><span class="info-key">LEDs (ESP)</span><span class="info-val" id="infoLeds">—</span></div>
+        <div class="info-row"><span class="info-key">Max LEDs</span><span class="info-val" id="infoMaxLeds">—</span></div>
+        <div class="info-row"><span class="info-key">GPIO Pin</span><span class="info-val" id="infoPin">—</span></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="switchPage('control',this)"><span class="nav-icon">🎛️</span>Steuern</div>
+  <div class="nav-item" onclick="switchPage('effects',this)"><span class="nav-icon">✨</span>Effekte</div>
+  <div class="nav-item" onclick="switchPage('presets',this)"><span class="nav-icon">⭐</span>Presets</div>
+  <div class="nav-item" onclick="switchPage('settings',this)"><span class="nav-icon">⚙️</span>Setup</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+
+// iOS Install Banner
+window.addEventListener('load', () => {
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true;
+  if (isIOS && !isStandalone && !localStorage.getItem('installDismissed')) {
+    document.getElementById('installBanner').classList.add('visible');
+  }
+});
+function dismissInstall() {
+  document.getElementById('installBanner').classList.remove('visible');
+  localStorage.setItem('installDismissed','1');
+}
+
+// Init BLE overlay on load
+window.addEventListener('load', () => {
+  if (!isConnected) document.getElementById('overlay').classList.add('visible');
+});
+const SVC       = '12345678-1234-1234-1234-123456789abc';
+const CHAR      = '12345678-1234-1234-1234-123456789001';
+const CHAR_INFO = '12345678-1234-1234-1234-123456789002';
+let bleDevice = null, writeChar = null, isConnected = false;
+let lastSend = 0, sendQueue = [], draining = false;
+
+async function toggleBLE() {
+  if (isConnected) { bleDevice?.gatt.disconnect(); return; }
+  if (!navigator.bluetooth) { showToast('⚠️ Bluefy Browser benötigt!'); return; }
+  try {
+    showToast('🔍 Suche Geräte...');
+    bleDevice = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: [SVC]
+    });
+    bleDevice.addEventListener('gattserverdisconnected', () => {
+      setConnected(false); showToast('📴 Getrennt');
+    });
+    const server  = await bleDevice.gatt.connect();
+    const service = await server.getPrimaryService(SVC);
+    writeChar     = await service.getCharacteristic(CHAR);
+
+    // Info-Characteristic abonnieren → ESP sendet LED-Anzahl
+    try {
+      const infoChar = await service.getCharacteristic(CHAR_INFO);
+      await infoChar.startNotifications();
+      infoChar.addEventListener('characteristicvaluechanged', (e) => {
+        const txt = new TextDecoder().decode(e.target.value);
+        try {
+          const data = JSON.parse(txt);
+          if (data.type === 'config' && data.leds) {
+            cfg.ledCount = data.leds;
+            document.getElementById('ledCountVal').textContent = cfg.ledCount;
+            document.getElementById('infoLeds').textContent = cfg.ledCount + ' LEDs';
+            updateDensity();
+            showToast('📡 ESP: ' + data.leds + ' LEDs erkannt');
+          }
+        } catch(e) {}
+      });
+      // Aktuellen Wert direkt lesen
+      const val = await infoChar.readValue();
+      const txt = new TextDecoder().decode(val);
+      try {
+        const data = JSON.parse(txt);
+        if (data.type === 'config' && data.leds) {
+          cfg.ledCount = data.leds;
+          document.getElementById('ledCountVal').textContent = cfg.ledCount;
+          document.getElementById('infoLeds').textContent = cfg.ledCount + ' LEDs';
+          updateDensity();
+          showToast('📡 ESP: ' + data.leds + ' LEDs erkannt');
+        }
+      } catch(e) {}
+    } catch(e) {
+      console.warn('Info char nicht verfügbar:', e);
+    }
+
+    setConnected(true);
+    showToast('✅ Verbunden mit ' + (bleDevice.name || bleDevice.id));
+    updateInfoPanel();
+  } catch(e) {
+    showToast('❌ ' + (e.message || 'Verbindung fehlgeschlagen'));
+  }
+}
+
+function setConnected(val) {
+  isConnected = val;
+  document.getElementById('bleBtn').classList.toggle('connected', val);
+  document.getElementById('bleBtnText').textContent = val ? 'Verbunden' : 'Verbinden';
+  if (!val) document.getElementById('overlay').classList.add('visible');
+  else document.getElementById('overlay').classList.remove('visible');
+  document.getElementById('infoStatus').textContent = val ? '🟢 Verbunden' : '🔴 Getrennt';
+}
+
+async function sendBLE(json) {
+  if (!isConnected || !writeChar) return;
+  const now = Date.now();
+  if (now - lastSend < 50) {
+    sendQueue = [json];
+    if (!draining) drain();
+    return;
+  }
+  lastSend = now;
+  try { await writeChar.writeValueWithoutResponse(new TextEncoder().encode(json)); }
+  catch(e) { console.warn(e); }
+}
+async function drain() {
+  draining = true;
+  while (sendQueue.length) {
+    const m = sendQueue.shift();
+    await sendBLE(m);
+    await new Promise(r => setTimeout(r, 60));
+  }
+  draining = false;
+}
+
+// ── State ────────────────────────────────────────────
+let S = { power:true, brightness:128, hue:0, sat:255, r:255, g:0, b:0, effectId:0, speed:128 };
+
+function togglePower() {
+  S.power = !S.power;
+  document.getElementById('powerToggle').classList.toggle('on', S.power);
+  document.getElementById('powerStatus').textContent = S.power ? 'Eingeschaltet' : 'Ausgeschaltet';
+  sendBLE(JSON.stringify({cmd:'power', val:S.power?1:0}));
+}
+
+function updateBrightness(v) {
+  S.brightness = +v;
+  document.getElementById('briVal').textContent = Math.round(v/2.55) + '%';
+}
+function sendBrightness(v) { sendBLE(JSON.stringify({cmd:'brightness', val:+v})); }
+
+function updatePreview() {
+  document.getElementById('colorPreview').style.background = `rgb(${S.r},${S.g},${S.b})`;
+}
+
+function updateHSV() {
+  const h = +document.getElementById('hue-slider').value;
+  const s = +document.getElementById('sat-slider').value;
+  S.hue = h; S.sat = s;
+  document.getElementById('hueVal').textContent = Math.round(h/255*360) + '°';
+  document.getElementById('satVal').textContent = Math.round(s/255*100) + '%';
+  const hDeg = Math.round(h/255*360);
+  document.getElementById('sat-slider').style.background =
+    `linear-gradient(to right,hsl(${hDeg},0%,50%),hsl(${hDeg},100%,50%))`;
+  const [r,g,b] = hsvToRgb(h/255, s/255, 1);
+  S.r=r; S.g=g; S.b=b;
+  updatePreview();
+}
+function sendColor() { sendBLE(JSON.stringify({cmd:'hsv', h:S.hue, s:S.sat, v:S.brightness})); }
+
+function updateRGB() {
+  S.r = +document.getElementById('r-slider').value;
+  S.g = +document.getElementById('g-slider').value;
+  S.b = +document.getElementById('b-slider').value;
+  document.getElementById('rVal').textContent = S.r;
+  document.getElementById('gVal').textContent = S.g;
+  document.getElementById('bVal').textContent = S.b;
+  updatePreview();
+}
+function sendColorRGB() { sendBLE(JSON.stringify({cmd:'color', r:S.r, g:S.g, b:S.b})); }
+
+function setPalette(r,g,b) {
+  S.r=r; S.g=g; S.b=b;
+  document.getElementById('r-slider').value = r;
+  document.getElementById('g-slider').value = g;
+  document.getElementById('b-slider').value = b;
+  updatePreview();
+  sendBLE(JSON.stringify({cmd:'color', r, g, b}));
+}
+
+function selectEffect(id) {
+  S.effectId = id;
+  document.querySelectorAll('.effect-btn').forEach(el =>
+    el.classList.toggle('active', +el.dataset.id === id));
+  sendEffect();
+}
+function updateSpeed(v) {
+  S.speed = +v;
+  document.getElementById('speedVal').textContent = Math.round(v/255*100) + '%';
+}
+function sendEffect() { sendBLE(JSON.stringify({cmd:'effect', id:S.effectId, speed:S.speed})); }
+
+const PRESETS = {
+  sunset: {r:255,g:107,b:53, effect:2,speed:80, brightness:180},
+  ocean:  {r:0,  g:120,b:255,effect:6,speed:100,brightness:150},
+  party:  {r:255,g:0,  b:200,effect:1,speed:240,brightness:255},
+  forest: {r:0,  g:200,b:50, effect:5,speed:60, brightness:80},
+  fire:   {r:255,g:80, b:0,  effect:4,speed:150,brightness:200},
+  white:  {r:255,g:220,b:180,effect:0,speed:128,brightness:255},
+};
+function applyPreset(name) {
+  const p = PRESETS[name];
+  S = {...S, ...p};
+  document.getElementById('brightness-slider').value = p.brightness;
+  updateBrightness(p.brightness);
+  document.getElementById('speed-slider').value = p.speed;
+  updateSpeed(p.speed);
+  updatePreview();
+  sendBLE(JSON.stringify({cmd:'brightness', val:p.brightness}));
+  sendBLE(JSON.stringify({cmd:'color', r:p.r, g:p.g, b:p.b}));
+  setTimeout(() => sendBLE(JSON.stringify({cmd:'effect', id:p.effect, speed:p.speed})), 100);
+  showToast('✅ Preset geladen');
+}
+
+// ── LED Config ───────────────────────────────────────
+let cfg = {
+  ledCount:   parseInt(localStorage.getItem('ledCount')   || '60'),
+  ledLength:  parseInt(localStorage.getItem('ledLength')  || '100'),
+  gpio:       parseInt(localStorage.getItem('gpio')       || '48'),
+  maxBri:     parseInt(localStorage.getItem('maxBri')     || '255'),
+  ledType:    localStorage.getItem('ledType')    || 'WS2812B',
+  colorOrder: localStorage.getItem('colorOrder') || 'GRB',
+};
+
+function initSettings() {
+  document.getElementById('ledCountInput').value       = cfg.ledCount;
+  document.getElementById('ledLengthInput').value      = cfg.ledLength;
+  document.getElementById('gpioInput').value           = cfg.gpio;
+  document.getElementById('maxBri-slider').value       = cfg.maxBri;
+  document.getElementById('maxBriVal').textContent     = Math.round(cfg.maxBri/2.55) + '%';
+  document.getElementById('ledTypeSelect').value       = cfg.ledType;
+  document.getElementById('colorOrderSelect').value    = cfg.colorOrder;
+  syncCfgUI();
+  updateInfoPanel();
+}
+
+function syncCfgUI() {
+  document.getElementById('ledCountInput').value  = cfg.ledCount;
+  document.getElementById('ledLengthInput').value = cfg.ledLength;
+  updateCalc();
+  highlightQuickBtn();
+}
+
+function changeNum(key, delta) {
+  if (key === 'ledCount') {
+    cfg.ledCount = Math.max(1, Math.min(500, cfg.ledCount + delta));
+  } else {
+    cfg.ledLength = Math.max(1, Math.min(2000, cfg.ledLength + delta));
+  }
+  syncCfgUI();
+}
+
+function setLedCount(n) {
+  cfg.ledCount = n;
+  syncCfgUI();
+}
+
+function highlightQuickBtn() {
+  document.querySelectorAll('.quick-btn').forEach(b => {
+    b.classList.toggle('sel', parseInt(b.textContent) === cfg.ledCount);
+  });
+}
+
+function updateCalc() {
+  const perMeter = cfg.ledLength > 0 ? Math.round(cfg.ledCount / cfg.ledLength * 100) : 0;
+  const maxMa    = cfg.ledCount * 60;
+  const recA     = Math.ceil(maxMa / 1000 * 1.2 * 10) / 10;
+  document.getElementById('calcPerMeter').textContent = perMeter + ' LEDs/m';
+  document.getElementById('calcPower').textContent    = (maxMa / 1000).toFixed(1) + ' A';
+  document.getElementById('calcPsu').textContent      = '≥ ' + recA.toFixed(1) + ' A / 5V';
+}
+
+function saveLEDConfig() {
+  cfg.ledType    = document.getElementById('ledTypeSelect').value;
+  cfg.colorOrder = document.getElementById('colorOrderSelect').value;
+  cfg.gpio       = parseInt(document.getElementById('gpioInput').value);
+  cfg.maxBri     = parseInt(document.getElementById('maxBri-slider').value);
+  cfg.ledCount   = parseInt(document.getElementById('ledCountInput').value);
+  cfg.ledLength  = parseInt(document.getElementById('ledLengthInput').value);
+
+  localStorage.setItem('ledCount',   cfg.ledCount);
+  localStorage.setItem('ledLength',  cfg.ledLength);
+  localStorage.setItem('gpio',       cfg.gpio);
+  localStorage.setItem('maxBri',     cfg.maxBri);
+  localStorage.setItem('ledType',    cfg.ledType);
+  localStorage.setItem('colorOrder', cfg.colorOrder);
+
+  updateInfoPanel();
+
+  sendBLE(JSON.stringify({
+    cmd: 'config', count: cfg.ledCount,
+    length: cfg.ledLength, maxBri: cfg.maxBri
+  }));
+
+  const hint = document.getElementById('savedHint');
+  hint.classList.add('visible');
+  setTimeout(() => hint.classList.remove('visible'), 6000);
+
+  // ESP startet neu → nach 4 Sek. automatisch neu verbinden
+  if (isConnected) {
+    showToast('🔄 ESP startet neu...');
+    setTimeout(() => {
+      showToast('🔍 Verbinde neu...');
+      toggleBLE();
+    }, 4000);
+  }
+}
+
+function updateInfoPanel() {
+  document.getElementById('infoDevice').textContent  = bleDevice ? (bleDevice.name || bleDevice.id || '—') : '—';
+  document.getElementById('infoLeds').textContent    = cfg.ledCount + ' LEDs';
+  document.getElementById('infoMaxLeds').textContent = '500 (MAX_LEDS im Code)';
+  document.getElementById('infoPin').textContent     = 'GPIO ' + cfg.gpio;
+}
+
+// ── UI helpers ───────────────────────────────────────
+function switchEffectTab(name) {
+  document.querySelectorAll('.effect-tab-panel').forEach(p => p.classList.toggle('active', p.id==='etab-'+name));
+  // update tab highlight
+  const tabs = document.querySelectorAll('#page-effects .tab');
+  tabs.forEach((t,i) => t.classList.toggle('active', ['wow','auto'][i]===name));
+}
+
+function restartESP() {
+  if (!isConnected) { showToast('⚠️ Nicht verbunden'); return; }
+  showToast('🔄 ESP startet neu...');
+  sendBLE(JSON.stringify({cmd:'restart'}));
+  setTimeout(() => setConnected(false), 1000);
+}
+
+function shutdownESP() {
+  if (!isConnected) { showToast('⚠️ Nicht verbunden'); return; }
+  showToast('💤 ESP wird ausgeschaltet...');
+  sendBLE(JSON.stringify({cmd:'shutdown'}));
+}
+  const names = ['hsv','rgb','palette'];
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', names[i]===name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id==='tab-'+name));
+}
+function switchPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  el.classList.add('active');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function hsvToRgb(h,s,v) {
+  let r,g,b;
+  const i=Math.floor(h*6), f=h*6-i, p=v*(1-s), q=v*(1-f*s), t=v*(1-(1-f)*s);
+  switch(i%6){
+    case 0:r=v;g=t;b=p;break; case 1:r=q;g=v;b=p;break;
+    case 2:r=p;g=v;b=t;break; case 3:r=p;g=q;b=v;break;
+    case 4:r=t;g=p;b=v;break; case 5:r=v;g=p;b=q;break;
+  }
+  return [Math.round(r*255), Math.round(g*255), Math.round(b*255)];
+}
+
+// Init
+updatePreview();
+updateHSV();
+initSettings();
+</script>
+</body>
+</html>
