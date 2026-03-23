@@ -458,8 +458,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     <div class="card">
       <div class="card-title">💡 LED Bänder (bis zu 10)</div>
       <div style="font-size:11px;color:var(--muted);padding:2px 0 8px;line-height:1.6">
-        Band 1 → GPIO 1 &nbsp;·&nbsp; Band 2 → GPIO 2 &nbsp;·&nbsp; Band 3 → GPIO 3 &nbsp;·&nbsp; Band 4 → GPIO 4 &nbsp;·&nbsp; Band 5 → GPIO 5<br>
-        Band 6 → GPIO 6 &nbsp;·&nbsp; Band 7 → GPIO 7 &nbsp;·&nbsp; Band 8 → GPIO 8 &nbsp;·&nbsp; Band 9 → GPIO 9 &nbsp;·&nbsp; Band 10 → GPIO 10
+        Band 1 → GPIO 4 &nbsp;·&nbsp; Band 2 → GPIO 5 &nbsp;·&nbsp; Band 3 → GPIO 6 &nbsp;·&nbsp; Band 4 → GPIO 7 &nbsp;·&nbsp; Band 5 → GPIO 8<br>
+        Band 6 → GPIO 9 &nbsp;·&nbsp; Band 7 → GPIO 10 &nbsp;·&nbsp; Band 8 → GPIO 11 &nbsp;·&nbsp; Band 9 → GPIO 12 &nbsp;·&nbsp; Band 10 → GPIO 13
       </div>
       <div id="stripList"></div>
       <button class="apply-btn" style="margin-top:6px" onclick="saveAllStrips()">💾 Alle Bänder speichern &amp; senden</button>
@@ -679,7 +679,7 @@ function buildStripList() {
     div.innerHTML = `
       <div class="strip-header">
         <div class="strip-num">${i+1}</div>
-        <div class="strip-title">Band ${i+1} <span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">→ GPIO ${i+1}</span></div>
+        <div class="strip-title">Band ${i+1} <span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">→ GPIO ${i+4}</span></div>
         <div class="strip-toggle ${s.on?'on':''}" id="st_${i}" onclick="toggleStrip(${i})"></div>
       </div>
       <div class="strip-fields" id="sf_${i}" style="${s.on?'':'opacity:0.4;pointer-events:none'}">
