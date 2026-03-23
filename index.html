@@ -458,8 +458,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     <div class="card">
       <div class="card-title">💡 LED Bänder (bis zu 10)</div>
       <div style="font-size:11px;color:var(--muted);padding:2px 0 8px;line-height:1.6">
-        Band 1 → GPIO 4 &nbsp;·&nbsp; Band 2 → GPIO 5 &nbsp;·&nbsp; Band 3 → GPIO 6 &nbsp;·&nbsp; Band 4 → GPIO 7 &nbsp;·&nbsp; Band 5 → GPIO 8<br>
-        Band 6 → GPIO 9 &nbsp;·&nbsp; Band 7 → GPIO 10 &nbsp;·&nbsp; Band 8 → GPIO 11 &nbsp;·&nbsp; Band 9 → GPIO 12 &nbsp;·&nbsp; Band 10 → GPIO 13
+        Band 1 → GPIO 4 &nbsp;·&nbsp; Band 2 → GPIO 5 &nbsp;·&nbsp; Band 3 → GPIO 6 &nbsp;·&nbsp; Band 4 → GPIO 7 &nbsp;·&nbsp; Band 5 → GPIO 8
       </div>
       <div id="stripList"></div>
       <button class="apply-btn" style="margin-top:6px" onclick="saveAllStrips()">💾 Alle Bänder speichern &amp; senden</button>
@@ -661,11 +660,11 @@ function applyPreset(name){
 }
 
 // ── LED Config ───────────────────────────────────────
-const DEFAULT_PINS = [1,2,3,4,5,6,7,8,9,10];
+const DEFAULT_PINS = [4,5,6,7,8];
 let cfg = {
   maxBri: parseInt(localStorage.getItem('maxBri')||'255'),
   strips: JSON.parse(localStorage.getItem('strips') || JSON.stringify(
-    Array.from({length:10},(_,i)=>({id:i,pin:DEFAULT_PINS[i],leds:i===0?60:0,on:i===0}))
+    Array.from({length:5},(_,i)=>({id:i,pin:i+4,leds:i===0?60:0,on:i===0}))
   ))
 };
 
@@ -727,7 +726,7 @@ function saveAllStrips() {
   let stripsJson = '[';
   cfg.strips.forEach((s,i)=>{
     stripsJson += `{"id":${i},"leds":${s.leds},"on":${s.on}}`;
-    if(i<9) stripsJson+=',';
+    if(i<4) stripsJson+=',';
   });
   stripsJson += ']';
   sendBLE(`{"cmd":"saveall","strips":${stripsJson},"maxBri":${cfg.maxBri}}`);
