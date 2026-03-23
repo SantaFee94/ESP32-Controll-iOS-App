@@ -457,6 +457,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     <!-- Strip Konfigurator -->
     <div class="card">
       <div class="card-title">💡 LED Bänder (bis zu 10)</div>
+      <div style="font-size:11px;color:var(--muted);padding:2px 0 8px;line-height:1.6">
+        Band 1 → GPIO 1 &nbsp;·&nbsp; Band 2 → GPIO 2 &nbsp;·&nbsp; Band 3 → GPIO 3 &nbsp;·&nbsp; Band 4 → GPIO 4 &nbsp;·&nbsp; Band 5 → GPIO 5<br>
+        Band 6 → GPIO 6 &nbsp;·&nbsp; Band 7 → GPIO 7 &nbsp;·&nbsp; Band 8 → GPIO 8 &nbsp;·&nbsp; Band 9 → GPIO 9 &nbsp;·&nbsp; Band 10 → GPIO 10
+      </div>
       <div id="stripList"></div>
       <button class="apply-btn" style="margin-top:6px" onclick="saveAllStrips()">💾 Alle Bänder speichern &amp; senden</button>
       <div class="saved-hint" id="savedHint">✅ Gespeichert! ESP startet neu (~3 Sek.)</div>
@@ -675,16 +679,11 @@ function buildStripList() {
     div.innerHTML = `
       <div class="strip-header">
         <div class="strip-num">${i+1}</div>
-        <div class="strip-title">Band ${i+1}</div>
+        <div class="strip-title">Band ${i+1} <span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace">→ GPIO ${i+1}</span></div>
         <div class="strip-toggle ${s.on?'on':''}" id="st_${i}" onclick="toggleStrip(${i})"></div>
       </div>
       <div class="strip-fields" id="sf_${i}" style="${s.on?'':'opacity:0.4;pointer-events:none'}">
-        <div class="strip-field">
-          <label>GPIO Pin</label>
-          <input type="number" id="sp_${i}" value="${s.pin}" min="1" max="48"
-            onchange="cfg.strips[${i}].pin=+this.value">
-        </div>
-        <div class="strip-field">
+        <div class="strip-field" style="grid-column:1/-1">
           <label>Anzahl LEDs</label>
           <input type="number" id="sl_${i}" value="${s.leds}" min="0" max="500"
             onchange="cfg.strips[${i}].leds=+this.value;updatePowerCalc()">
@@ -717,30 +716,26 @@ function updatePowerCalc() {
 }
 
 function saveAllStrips() {
-  // Aktuelle Inputs lesen
   cfg.strips.forEach((s,i)=>{
-    const pinEl = document.getElementById('sp_'+i);
     const ledEl = document.getElementById('sl_'+i);
-    if(pinEl) s.pin = parseInt(pinEl.value)||DEFAULT_PINS[i];
     if(ledEl) s.leds = parseInt(ledEl.value)||0;
   });
   cfg.maxBri = parseInt(document.getElementById('maxBri-slider').value);
   localStorage.setItem('strips', JSON.stringify(cfg.strips));
   localStorage.setItem('maxBri', cfg.maxBri);
 
-  // JSON an ESP senden
   let stripsJson = '[';
   cfg.strips.forEach((s,i)=>{
-    stripsJson += `{"id":${s.id},"pin":${s.pin},"leds":${s.leds},"on":${s.on}}`;
+    stripsJson += `{"id":${i},"leds":${s.leds},"on":${s.on}}`;
     if(i<9) stripsJson+=',';
   });
   stripsJson += ']';
-  sendBLE(`{"cmd":"saveall","strips":${stripsJson}}`);
+  sendBLE(`{"cmd":"saveall","strips":${stripsJson},"maxBri":${cfg.maxBri}}`);
 
   const hint = document.getElementById('savedHint');
   hint.classList.add('visible');
   setTimeout(()=>hint.classList.remove('visible'), 5000);
-  if(isConnected) {
+  if(isConnected){
     showToast('💾 Gesendet — ESP startet neu...');
     setTimeout(()=>setConnected(false), 1500);
   } else {
