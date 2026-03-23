@@ -133,7 +133,22 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .btn-shutdown{background:rgba(255,50,50,0.12);border:1px solid rgba(255,50,50,0.35);color:#ff4444;}
 .danger-icon{font-size:20px;}
 
-/* INSTALL BANNER */
+/* STRIP CARDS */
+.strip-card{background:var(--surface2);border:1px solid var(--border);border-radius:13px;padding:14px;margin-bottom:10px;transition:border-color 0.2s;}
+.strip-card.strip-active{border-color:rgba(124,92,252,0.5);}
+.strip-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.strip-num{width:28px;height:28px;border-radius:50%;background:var(--accent);color:white;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.strip-title{font-size:14px;font-weight:700;flex:1;}
+.strip-toggle{width:44px;height:24px;background:var(--surface);border-radius:12px;border:1px solid var(--border);position:relative;cursor:pointer;transition:background 0.3s;flex-shrink:0;}
+.strip-toggle.on{background:var(--accent);border-color:var(--accent);}
+.strip-toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:white;transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1);}
+.strip-toggle.on::after{transform:translateX(20px);}
+.strip-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.strip-field{display:flex;flex-direction:column;gap:4px;}
+.strip-field label{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.5px;}
+.strip-field input{width:100%;padding:7px 9px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;font-weight:600;text-align:center;outline:none;}
+.strip-field input:focus{border-color:var(--accent);}
+.strip-field input:disabled{opacity:0.3;}
 .install-banner{display:none;align-items:center;gap:12px;padding:13px 16px;background:linear-gradient(135deg,rgba(124,92,252,0.18),rgba(252,92,125,0.12));border:1px solid rgba(124,92,252,0.3);border-radius:14px;}
 .install-banner.visible{display:flex;}
 
@@ -438,96 +453,51 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 
   <!-- PAGE: Setup -->
   <div class="page" id="page-settings">
+
+    <!-- Strip Konfigurator -->
     <div class="card">
-      <div class="card-title">🔧 LED Konfiguration</div>
-      <div class="cfg-row">
-        <div class="cfg-label">💡 Anzahl LEDs</div>
-        <div class="cfg-desc">Wie viele LEDs sind angeschlossen?</div>
-        <div class="cfg-input-row">
-          <button class="num-btn" onclick="changeNum('ledCount',-10)">−−</button>
-          <button class="num-btn" onclick="changeNum('ledCount',-1)">−</button>
-          <input type="number" class="num-input" id="ledCountInput" value="60" min="1" max="500" onchange="cfg.ledCount=Math.max(1,Math.min(500,+this.value));syncCfgUI()">
-          <button class="num-btn" onclick="changeNum('ledCount',1)">+</button>
-          <button class="num-btn" onclick="changeNum('ledCount',10)">++</button>
-        </div>
-      </div>
-      <div class="quick-btns">
-        <button class="quick-btn" onclick="setLedCount(30)">30</button>
-        <button class="quick-btn" onclick="setLedCount(60)">60</button>
-        <button class="quick-btn" onclick="setLedCount(90)">90</button>
-        <button class="quick-btn" onclick="setLedCount(120)">120</button>
-        <button class="quick-btn" onclick="setLedCount(144)">144</button>
-        <button class="quick-btn" onclick="setLedCount(300)">300</button>
-      </div>
-      <div style="height:1px;background:var(--border)"></div>
-      <div class="cfg-row">
-        <div class="cfg-label">📏 Länge (cm)</div>
-        <div class="cfg-desc">Physische Länge des Streifens</div>
-        <div class="cfg-input-row">
-          <button class="num-btn" onclick="changeNum('ledLength',-10)">−−</button>
-          <button class="num-btn" onclick="changeNum('ledLength',-1)">−</button>
-          <input type="number" class="num-input" id="ledLengthInput" value="100" min="1" max="2000" onchange="cfg.ledLength=Math.max(1,Math.min(2000,+this.value));syncCfgUI()">
-          <button class="num-btn" onclick="changeNum('ledLength',1)">+</button>
-          <button class="num-btn" onclick="changeNum('ledLength',10)">++</button>
-        </div>
-      </div>
-      <div class="cfg-calc-box" id="cfgCalcBox">
-        <div class="calc-row"><span>LEDs/Meter</span><span id="calcPerMeter">60</span></div>
-        <div class="calc-row"><span>Stromverbrauch (max)</span><span id="calcPower">—</span></div>
-        <div class="calc-row"><span>Empf. Netzteil</span><span id="calcPsu">—</span></div>
-      </div>
-      <div style="height:1px;background:var(--border)"></div>
-      <div class="cfg-row">
-        <div class="cfg-label">GPIO Pin</div>
-        <div class="cfg-desc">Datenkabel angeschlossen an</div>
-        <div class="cfg-input-row" style="justify-content:flex-end">
-          <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">GPIO</span>
-          <input type="number" class="num-input" id="gpioInput" value="48" min="0" max="48" onchange="cfg.gpio=+this.value">
-        </div>
-      </div>
-      <div class="cfg-row">
-        <div class="cfg-label">LED Typ</div>
-        <select class="cfg-select" id="ledTypeSelect" onchange="cfg.ledType=this.value">
-          <option value="WS2812B" selected>WS2812B</option>
-          <option value="WS2811">WS2811</option>
-          <option value="WS2813">WS2813</option>
-          <option value="SK6812">SK6812 (RGBW)</option>
-          <option value="APA102">APA102</option>
-        </select>
-      </div>
-      <div class="cfg-row">
-        <div class="cfg-label">Farbreihenfolge</div>
-        <select class="cfg-select" id="colorOrderSelect" onchange="cfg.colorOrder=this.value">
-          <option value="GRB" selected>GRB</option>
-          <option value="RGB">RGB</option>
-          <option value="BGR">BGR</option>
-          <option value="RBG">RBG</option>
-        </select>
-      </div>
-      <div class="cfg-row">
-        <div class="cfg-label">Max. Helligkeit</div>
-        <div class="slider-row" style="width:100%;margin-top:8px">
-          <div class="slider-header">
-            <span style="font-size:12px;color:var(--muted)">Limit</span>
-            <span class="slider-value" id="maxBriVal">100%</span>
-          </div>
-          <input type="range" id="maxBri-slider" min="1" max="255" value="255" style="background:linear-gradient(to right,var(--surface2),var(--accent))" oninput="cfg.maxBri=+this.value;document.getElementById('maxBriVal').textContent=Math.round(+this.value/2.55)+'%'">
-        </div>
-      </div>
-      <button class="apply-btn" onclick="saveLEDConfig()">💾 Speichern &amp; auf ESP übertragen</button>
+      <div class="card-title">💡 LED Bänder (bis zu 10)</div>
+      <div id="stripList"></div>
+      <button class="apply-btn" style="margin-top:6px" onclick="saveAllStrips()">💾 Alle Bänder speichern &amp; senden</button>
       <div class="saved-hint" id="savedHint">✅ Gespeichert! ESP startet neu (~3 Sek.)</div>
     </div>
 
+    <!-- Stromrechner -->
+    <div class="card">
+      <div class="card-title">⚡ Stromrechner</div>
+      <div class="cfg-calc-box">
+        <div class="calc-row"><span>Aktive Bänder</span><span id="calcStrips">—</span></div>
+        <div class="calc-row"><span>LEDs gesamt</span><span id="calcTotal">—</span></div>
+        <div class="calc-row"><span>Stromverbrauch (max)</span><span id="calcPower">—</span></div>
+        <div class="calc-row"><span>Empf. Netzteil</span><span id="calcPsu">—</span></div>
+      </div>
+    </div>
+
+    <!-- Max Helligkeit -->
+    <div class="card">
+      <div class="card-title">☀️ Max. Helligkeit</div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Limit (Stromschutz)</span>
+          <span class="slider-value" id="maxBriVal">100%</span>
+        </div>
+        <input type="range" id="maxBri-slider" min="1" max="255" value="255"
+          style="background:linear-gradient(to right,var(--surface2),var(--accent))"
+          oninput="cfg.maxBri=+this.value;document.getElementById('maxBriVal').textContent=Math.round(+this.value/2.55)+'%'">
+      </div>
+    </div>
+
+    <!-- ESP Info -->
     <div class="card">
       <div class="card-title">📡 ESP32 Info</div>
       <div class="info-list">
         <div class="info-row"><span class="info-key">Gerät</span><span class="info-val" id="infoDevice">—</span></div>
         <div class="info-row"><span class="info-key">Status</span><span class="info-val" id="infoStatus">🔴 Getrennt</span></div>
-        <div class="info-row"><span class="info-key">LEDs (ESP)</span><span class="info-val" id="infoLeds">—</span></div>
-        <div class="info-row"><span class="info-key">GPIO Pin</span><span class="info-val" id="infoPin">—</span></div>
+        <div class="info-row"><span class="info-key">Aktive Bänder</span><span class="info-val" id="infoStrips">—</span></div>
       </div>
     </div>
 
+    <!-- Restart / Shutdown -->
     <div class="card">
       <div class="card-title">⚙️ Gerät</div>
       <div class="danger-row">
@@ -586,25 +556,13 @@ async function toggleBLE(){
       ic.addEventListener('characteristicvaluechanged',e=>{
         try{
           const d=JSON.parse(new TextDecoder().decode(e.target.value));
-          if(d.type==='config'&&d.leds){
-            cfg.ledCount=d.leds;
-            document.getElementById('ledCountInput').value=cfg.ledCount;
-            document.getElementById('infoLeds').textContent=cfg.ledCount+' LEDs';
-            document.getElementById('infoPin').textContent='GPIO '+d.pin;
-            updateCalc();showToast('📡 ESP: '+d.leds+' LEDs erkannt');
-          }
+          if(d.type==='config') applyESPConfig(d);
         }catch(e){}
       });
       const v=await ic.readValue();
       try{
         const d=JSON.parse(new TextDecoder().decode(v));
-        if(d.type==='config'&&d.leds){
-          cfg.ledCount=d.leds;
-          document.getElementById('ledCountInput').value=cfg.ledCount;
-          document.getElementById('infoLeds').textContent=cfg.ledCount+' LEDs';
-          document.getElementById('infoPin').textContent='GPIO '+d.pin;
-          updateCalc();showToast('📡 ESP: '+d.leds+' LEDs erkannt');
-        }
+        if(d.type==='config') applyESPConfig(d);
       }catch(e){}
     }catch(e){}
     setConnected(true);
@@ -699,65 +657,127 @@ function applyPreset(name){
 }
 
 // ── LED Config ───────────────────────────────────────
-let cfg={
-  ledCount:parseInt(localStorage.getItem('ledCount')||'60'),
-  ledLength:parseInt(localStorage.getItem('ledLength')||'100'),
-  gpio:parseInt(localStorage.getItem('gpio')||'48'),
-  maxBri:parseInt(localStorage.getItem('maxBri')||'255'),
-  ledType:localStorage.getItem('ledType')||'WS2812B',
-  colorOrder:localStorage.getItem('colorOrder')||'GRB',
+const DEFAULT_PINS = [1,2,3,4,5,6,7,8,9,10];
+let cfg = {
+  maxBri: parseInt(localStorage.getItem('maxBri')||'255'),
+  strips: JSON.parse(localStorage.getItem('strips') || JSON.stringify(
+    Array.from({length:10},(_,i)=>({id:i,pin:DEFAULT_PINS[i],leds:i===0?60:0,on:i===0}))
+  ))
 };
 
-function initSettings(){
-  document.getElementById('ledCountInput').value=cfg.ledCount;
-  document.getElementById('ledLengthInput').value=cfg.ledLength;
-  document.getElementById('gpioInput').value=cfg.gpio;
-  document.getElementById('maxBri-slider').value=cfg.maxBri;
-  document.getElementById('maxBriVal').textContent=Math.round(cfg.maxBri/2.55)+'%';
-  document.getElementById('ledTypeSelect').value=cfg.ledType;
-  document.getElementById('colorOrderSelect').value=cfg.colorOrder;
-  syncCfgUI();updateInfoPanel();
+function buildStripList() {
+  const container = document.getElementById('stripList');
+  container.innerHTML = '';
+  cfg.strips.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'strip-card' + (s.on ? ' strip-active' : '');
+    div.id = 'sc_'+i;
+    div.innerHTML = `
+      <div class="strip-header">
+        <div class="strip-num">${i+1}</div>
+        <div class="strip-title">Band ${i+1}</div>
+        <div class="strip-toggle ${s.on?'on':''}" id="st_${i}" onclick="toggleStrip(${i})"></div>
+      </div>
+      <div class="strip-fields" id="sf_${i}" style="${s.on?'':'opacity:0.4;pointer-events:none'}">
+        <div class="strip-field">
+          <label>GPIO Pin</label>
+          <input type="number" id="sp_${i}" value="${s.pin}" min="1" max="48"
+            onchange="cfg.strips[${i}].pin=+this.value">
+        </div>
+        <div class="strip-field">
+          <label>Anzahl LEDs</label>
+          <input type="number" id="sl_${i}" value="${s.leds}" min="0" max="500"
+            onchange="cfg.strips[${i}].leds=+this.value;updatePowerCalc()">
+        </div>
+      </div>`;
+    container.appendChild(div);
+  });
+  updatePowerCalc();
 }
-function syncCfgUI(){
-  document.getElementById('ledCountInput').value=cfg.ledCount;
-  document.getElementById('ledLengthInput').value=cfg.ledLength;
-  updateCalc();highlightQuickBtn();
+
+function toggleStrip(i) {
+  cfg.strips[i].on = !cfg.strips[i].on;
+  document.getElementById('st_'+i).classList.toggle('on', cfg.strips[i].on);
+  document.getElementById('sc_'+i).classList.toggle('strip-active', cfg.strips[i].on);
+  const fields = document.getElementById('sf_'+i);
+  fields.style.opacity = cfg.strips[i].on ? '1' : '0.4';
+  fields.style.pointerEvents = cfg.strips[i].on ? 'auto' : 'none';
+  updatePowerCalc();
 }
-function changeNum(key,delta){
-  if(key==='ledCount')cfg.ledCount=Math.max(1,Math.min(500,cfg.ledCount+delta));
-  else cfg.ledLength=Math.max(1,Math.min(2000,cfg.ledLength+delta));
-  syncCfgUI();
+
+function updatePowerCalc() {
+  const active = cfg.strips.filter(s=>s.on&&s.leds>0);
+  const total = active.reduce((sum,s)=>sum+s.leds,0);
+  const ma = total * 60;
+  const rec = Math.ceil(ma/1000*1.2*10)/10;
+  document.getElementById('calcStrips').textContent = active.length + ' Bänder';
+  document.getElementById('calcTotal').textContent = total + ' LEDs';
+  document.getElementById('calcPower').textContent = (ma/1000).toFixed(1) + ' A';
+  document.getElementById('calcPsu').textContent = '≥ ' + rec.toFixed(1) + ' A / 5V';
 }
-function setLedCount(n){cfg.ledCount=n;syncCfgUI();}
-function highlightQuickBtn(){document.querySelectorAll('.quick-btn').forEach(b=>b.classList.toggle('sel',parseInt(b.textContent)===cfg.ledCount));}
-function updateCalc(){
-  const pm=cfg.ledLength>0?Math.round(cfg.ledCount/cfg.ledLength*100):0;
-  const ma=cfg.ledCount*60;const ra=Math.ceil(ma/1000*1.2*10)/10;
-  document.getElementById('calcPerMeter').textContent=pm+' LEDs/m';
-  document.getElementById('calcPower').textContent=(ma/1000).toFixed(1)+' A';
-  document.getElementById('calcPsu').textContent='≥ '+ra.toFixed(1)+' A / 5V';
+
+function saveAllStrips() {
+  // Aktuelle Inputs lesen
+  cfg.strips.forEach((s,i)=>{
+    const pinEl = document.getElementById('sp_'+i);
+    const ledEl = document.getElementById('sl_'+i);
+    if(pinEl) s.pin = parseInt(pinEl.value)||DEFAULT_PINS[i];
+    if(ledEl) s.leds = parseInt(ledEl.value)||0;
+  });
+  cfg.maxBri = parseInt(document.getElementById('maxBri-slider').value);
+  localStorage.setItem('strips', JSON.stringify(cfg.strips));
+  localStorage.setItem('maxBri', cfg.maxBri);
+
+  // JSON an ESP senden
+  let stripsJson = '[';
+  cfg.strips.forEach((s,i)=>{
+    stripsJson += `{"id":${s.id},"pin":${s.pin},"leds":${s.leds},"on":${s.on}}`;
+    if(i<9) stripsJson+=',';
+  });
+  stripsJson += ']';
+  sendBLE(`{"cmd":"saveall","strips":${stripsJson}}`);
+
+  const hint = document.getElementById('savedHint');
+  hint.classList.add('visible');
+  setTimeout(()=>hint.classList.remove('visible'), 5000);
+  if(isConnected) {
+    showToast('💾 Gesendet — ESP startet neu...');
+    setTimeout(()=>setConnected(false), 1500);
+  } else {
+    showToast('💾 Lokal gespeichert');
+  }
 }
-function saveLEDConfig(){
-  cfg.ledType=document.getElementById('ledTypeSelect').value;
-  cfg.colorOrder=document.getElementById('colorOrderSelect').value;
-  cfg.gpio=parseInt(document.getElementById('gpioInput').value);
-  cfg.maxBri=parseInt(document.getElementById('maxBri-slider').value);
-  cfg.ledCount=parseInt(document.getElementById('ledCountInput').value);
-  cfg.ledLength=parseInt(document.getElementById('ledLengthInput').value);
-  localStorage.setItem('ledCount',cfg.ledCount);localStorage.setItem('ledLength',cfg.ledLength);
-  localStorage.setItem('gpio',cfg.gpio);localStorage.setItem('maxBri',cfg.maxBri);
-  localStorage.setItem('ledType',cfg.ledType);localStorage.setItem('colorOrder',cfg.colorOrder);
+
+// Config vom ESP empfangen und Strips aktualisieren
+function applyESPConfig(data) {
+  if(!data.strips) return;
+  data.strips.forEach(s=>{
+    if(s.id>=0&&s.id<10){
+      cfg.strips[s.id].pin  = s.pin;
+      cfg.strips[s.id].leds = s.leds;
+      cfg.strips[s.id].on   = s.on;
+    }
+  });
+  buildStripList();
+  const active = cfg.strips.filter(s=>s.on&&s.leds>0).length;
+  const el = document.getElementById('infoStrips');
+  if(el) el.textContent = active + ' aktiv';
+  showToast('📡 ESP: ' + active + ' Bänder erkannt');
+}
+
+function initSettings() {
+  document.getElementById('maxBri-slider').value = cfg.maxBri;
+  document.getElementById('maxBriVal').textContent = Math.round(cfg.maxBri/2.55)+'%';
+  buildStripList();
   updateInfoPanel();
-  sendBLE(JSON.stringify({cmd:'config',count:cfg.ledCount,length:cfg.ledLength,maxBri:cfg.maxBri}));
-  const hint=document.getElementById('savedHint');hint.classList.add('visible');
-  setTimeout(()=>hint.classList.remove('visible'),5000);
-  if(isConnected){showToast('🔄 ESP startet neu...');setTimeout(()=>{showToast('🔍 Verbinde neu...');toggleBLE();},4500);}
 }
+
 function updateInfoPanel(){
-  const dev=bleDevice?(bleDevice.name||bleDevice.id||'—'):'—';
-  document.getElementById('infoDevice').textContent=dev;
-  document.getElementById('infoLeds').textContent=cfg.ledCount+' LEDs';
-  document.getElementById('infoPin').textContent='GPIO '+cfg.gpio;
+  const dev = bleDevice?(bleDevice.name||bleDevice.id||'—'):'—';
+  document.getElementById('infoDevice').textContent = dev;
+  const active = cfg.strips.filter(s=>s.on&&s.leds>0).length;
+  const el = document.getElementById('infoStrips');
+  if(el) el.textContent = active + ' aktiv';
 }
 
 // ── Restart / Shutdown ───────────────────────────────
